@@ -214,7 +214,6 @@ enum PlayerHook
     PLAYERHOOK_ON_GET_REPUTATION_PRICE_DISCOUNT,
     PLAYERHOOK_ON_LEARN_TAXI_NODE,
     PLAYERHOOK_ON_BEFORE_GET_LEVEL_FOR_XP_GAIN,
-    PLAYERHOOK_ON_GET_GLYPH_SLOT_REQUIRED_LEVEL,
     PLAYERHOOK_END
 };
 
@@ -850,10 +849,6 @@ public:
      * @param level The level that should be used for XP gain calculations
      */
     virtual void OnPlayerBeforeGetLevelForXPGain(Player const* /*player*/, uint8& /*level*/) {}
-    
-    // Called when the core needs the minimum level required for a glyph slot.
-    // requiredLevel is an in/out value. Scripts may replace it.
-    virtual void OnGetGlyphSlotRequiredLevel(Player* /*player*/, uint8 /*glyphSlot*/, uint8& /*requiredLevel*/) { }
 };
 
 #endif
