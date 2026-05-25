@@ -13341,25 +13341,44 @@ uint32 Player::GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 n
 
 void Player::InitGlyphsForLevel()
 {
+    // Initialize glyph slot IDs from GlyphSlot.dbc.
+    // Required for correct Major/Minor socket layout.
     for (uint32 i = 0; i < sGlyphSlotStore.GetNumRows(); ++i)
         if (GlyphSlotEntry const* gs = sGlyphSlotStore.LookupEntry(i))
             if (gs->Order)
                 SetGlyphSlot(gs->Order - 1, gs->Id);
 
-    uint8 level = GetLevel();
     uint32 value = 0;
 
-    // 0x3F = 0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 for 80 level
-    if (level >= 15)
-        value |= (0x01 | 0x02);
-    if (level >= 30)
-        value |= 0x08;
-    if (level >= 50)
-        value |= 0x04;
-    if (level >= 70)
-        value |= 0x10;
-    if (level >= 80)
-        value |= 0x20;
+    for (uint8 slot = 0; slot < MAX_GLYPH_SLOT_INDEX; ++slot)
+    {
+        uint8 minLevel = 0;
+
+        switch (slot)
+        {
+            case 0:
+            case 1:
+                minLevel = 15;
+                break;
+            case 2:
+                minLevel = 50;
+                break;
+            case 3:
+                minLevel = 30;
+                break;
+            case 4:
+                minLevel = 70;
+                break;
+            case 5:
+                minLevel = 80;
+                break;
+        }
+
+        sScriptMgr->OnPlayerGetGlyphSlotRequiredLevel(this, slot, minLevel);
+
+        if (!minLevel || GetLevel() >= minLevel)
+            value |= 1 << slot;
+    }
 
     SetUInt32Value(PLAYER_GLYPHS_ENABLED, value);
 }

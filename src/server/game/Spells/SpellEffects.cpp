@@ -4334,28 +4334,33 @@ void Spell::EffectApplyGlyph(SpellEffIndex effIndex)
 
     Player* player = m_caster->ToPlayer();
 
-    // glyph sockets level requirement
+    // Glyph socket level requirement.
+    // Default value is provided by the core/module hook.
     uint8 minLevel = 0;
+    
     switch (m_glyphIndex)
-    {
-        case 0:
-        case 1:
-            minLevel = 15;
-            break;
-        case 2:
-            minLevel = 50;
-            break;
-        case 3:
-            minLevel = 30;
-            break;
-        case 4:
-            minLevel = 70;
-            break;
-        case 5:
-            minLevel = 80;
-            break;
-    }
-    if (minLevel && m_caster->GetLevel() < minLevel)
+{
+    case 0:
+    case 1:
+        minLevel = 15;
+        break;
+    case 2:
+        minLevel = 50;
+        break;
+    case 3:
+        minLevel = 30;
+        break;
+    case 4:
+        minLevel = 70;
+        break;
+    case 5:
+        minLevel = 80;
+        break;
+}
+
+    sScriptMgr->OnPlayerGetGlyphSlotRequiredLevel(player, m_glyphIndex, minLevel);
+
+    if (minLevel && player->GetLevel() < minLevel)
     {
         SendCastResult(SPELL_FAILED_GLYPH_SOCKET_LOCKED);
         return;
@@ -4371,12 +4376,13 @@ void Spell::EffectApplyGlyph(SpellEffIndex effIndex)
                 if (glyphEntry->TypeFlags != glyphSlotEntry->TypeFlags)
                 {
                     SendCastResult(SPELL_FAILED_INVALID_GLYPH);
-                    return;                                 // glyph slot mismatch
+                    return; // glyph slot mismatch
                 }
             }
 
             // remove old glyph aura
             if (uint32 oldGlyph = player->GetGlyph(m_glyphIndex))
+            {
                 if (GlyphPropertiesEntry const* oldGlyphEntry = sGlyphPropertiesStore.LookupEntry(oldGlyph))
                 {
                     player->RemoveAurasDueToSpell(oldGlyphEntry->SpellId);
@@ -4386,6 +4392,7 @@ void Spell::EffectApplyGlyph(SpellEffIndex effIndex)
                     for (Unit::AuraMap::iterator iter = ownedAuras.begin(); iter != ownedAuras.end();)
                     {
                         Aura* aura = iter->second;
+
                         if (SpellInfo const* triggeredByAuraSpellInfo = aura->GetTriggeredByAuraSpellInfo())
                         {
                             if (triggeredByAuraSpellInfo->Id == oldGlyphEntry->SpellId)
@@ -4394,14 +4401,17 @@ void Spell::EffectApplyGlyph(SpellEffIndex effIndex)
                                 continue;
                             }
                         }
+
                         ++iter;
                     }
 
                     player->SendLearnPacket(oldGlyphEntry->SpellId, false); // Send packet to properly handle client-side spell tooltips
                 }
+            }
 
             player->SendLearnPacket(glyphEntry->SpellId, true); // Send packet to properly handle client-side spell tooltips
             player->CastSpell(m_caster, glyphEntry->SpellId, TriggerCastFlags(TRIGGERED_FULL_MASK & ~(TRIGGERED_IGNORE_SHAPESHIFT | TRIGGERED_IGNORE_CASTER_AURASTATE)));
+
             player->SetGlyph(m_glyphIndex, glyph, !player->GetSession()->PlayerLoading());
             player->SendTalentsInfoData(false);
         }
